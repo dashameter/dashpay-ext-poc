@@ -2,6 +2,25 @@ import PortStream from "extension-port-stream";
 import localforage from "localforage";
 import Dash from "dash";
 
+const ONBOARD_MAGIC_URL = "http://127.0.0.1:3335/#/magic";
+let ONBOARD_TABID;
+
+chrome.runtime.onInstalled.addListener((details) => {
+  const currentVersion = chrome.runtime.getManifest().version;
+  console.log("currentVersion :>> ", currentVersion);
+  console.log("details :>> ", details);
+  chrome.tabs.create({ url: ONBOARD_MAGIC_URL, active: false }, (tab) => {
+    ONBOARD_TABID = tab.id;
+    chrome.windows.getCurrent((window) => {
+      const top = Math.max(window.top, 0) || 0;
+      const left = Math.max(window.left + (window.width - POPUP_WIDTH), 0) || 0;
+
+      const config = { ONBOARD_TABID: tab.id, top, left };
+      chrome.windows.create(config);
+    });
+  });
+});
+
 // eslint-disable-next-line no-unused-vars
 const syncDashClient = async ({ mnemonic }) => {
   console.log("start syncDashClient");
@@ -87,7 +106,17 @@ const connectRemote = (remotePort) => {
 
         break;
 
+      case "inviteCode":
+        chrome.storage.local.set({ inviteCode: data.payload }, function () {
+          console.log("The inviteCode is set to:", data.payload);
+          ONBOARD_TABID && chrome.tabs.remove(ONBOARD_TABID);
+          openPopup();
+        });
+
+        break;
+
       default:
+        console.log("received message :>> ", data.name, data.payload);
         break;
     }
   });

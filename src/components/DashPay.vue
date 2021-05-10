@@ -5,6 +5,11 @@
         ><v-img max-height="40px" max-width="40px" src="icons/150.png" />
         DashPay</v-card-title
       >
+      <v-card-text class="text-center"
+        >Your invite code is:<strong>
+          {{ inviteCode || "N/A" }}</strong
+        ></v-card-text
+      >
       <v-textarea outlined v-model="mnemonic"></v-textarea>
       <v-row align="center" justify="center"
         ><v-spacer>
@@ -27,18 +32,24 @@ export default {
   name: "DashPay",
   data: function () {
     return {
+      inviteCode: "",
       isSyncingDashClient: false,
       mnemonic: "",
       // "genius hair inch brisk disease suit history slush equal valid gate bicycle",
     };
   },
   created() {
+    const that = this;
     console.log(
       "chrome.extension.getURL(icons/150.png) :>> ",
       chrome.extension.getURL("icons/150.png")
     );
     chrome.storage.local.set({ accountDPNS: null }, function () {
       console.log("Value is set to ", "null");
+    });
+    chrome.storage.local.get(["inviteCode"], function (result) {
+      console.log("inviteCode is ", result.inviteCode);
+      that.inviteCode = result.inviteCode;
     });
   },
   mounted() {
