@@ -1,0 +1,61 @@
+{
+  "name": "DashPay",
+  "description": "DashPay - A Dash Evolution Wallet",
+  "author": "The DashpayJS Developers",
+  "contributors": [
+    {
+      "name": "Dashameter",
+      "email": "dashameter@gmail.com"
+    }
+  ],
+  "license": "MIT",
+  "version": "0.1.0",
+  "scripts": {
+    "serve": "vue-cli-service build --mode development --watch",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "axios": "^0.20.0",
+    "bitcore-ecies-dash": "^1.0.4",
+    "core-js": "^3.6.5",
+    "dash": "^3.18.2",
+    "extension-port-stream": "^2.0.1",
+    "localforage": "^1.9.0",
+    "post-message-stream": "^3.0.0",
+    "vue": "^2.6.11",
+    "vue-router": "^3.2.0",
+    "vuetify": "^2.4.0",
+    "vuex": "^3.4.0"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "~4.5.0",
+    "@vue/cli-plugin-eslint": "~4.5.0",
+    "@vue/cli-plugin-router": "~4.5.0",
+    "@vue/cli-plugin-vuex": "~4.5.0",
+    "@vue/cli-service": "~4.5.0",
+    "@vue/eslint-config-prettier": "^6.0.0",
+    "babel-eslint": "^10.1.0",
+    "deepmerge": "^1.5.2",
+    "eslint": "^6.7.2",
+    "eslint-plugin-prettier": "^3.3.1",
+    "eslint-plugin-vue": "^6.2.2",
+    "lint-staged": "^9.5.0",
+    "prettier": "^2.2.1",
+    "sass": "^1.32.12",
+    "sass-loader": "^10.1.1",
+    "vue-cli-plugin-browser-extension": "latest",
+    "vue-cli-plugin-vuetify": "~2.4.0",
+    "vue-template-compiler": "^2.6.11",
+    "vuetify-loader": "^1.7.0"
+  },
+  "gitHooks": {
+    "pre-commit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,jsx,vue}": [
+      "vue-cli-service lint",
+      "git add"
+    ]
+  }
+}
