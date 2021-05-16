@@ -34,7 +34,8 @@ export default {
     return {
       inviteCode: "",
       isSyncingDashClient: false,
-      mnemonic: "",
+      mnemonic:
+        "attract glass unlock illegal era utility corn trip truly room amateur ahead",
       // "genius hair inch brisk disease suit history slush equal valid gate bicycle",
     };
   },
@@ -59,6 +60,7 @@ export default {
       that.value = result.counter | 0;
       console.log("this.value mounted:>> ", that.value);
     });
+    this.login();
   },
   methods: {
     async login() {

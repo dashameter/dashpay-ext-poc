@@ -1,6 +1,11 @@
 import PortStream from "extension-port-stream";
 import localforage from "localforage";
 import Dash from "dash";
+import Dashcore from "@dashevo/dashcore-lib";
+// import secp256k1 from "secp256k1";
+const ECIES = require("bitcore-ecies-dash");
+
+const { Message } = require("@dashevo/dashcore-lib");
 
 const ONBOARD_MAGIC_URL = "http://127.0.0.1:3335/#/magic";
 let ONBOARD_TABID;
@@ -38,9 +43,9 @@ const syncDashClient = async ({ mnemonic }) => {
       adapter: localforage,
     },
     apps: {
-      dpns: { contractId: "3Z5gfAU5tqVuAZipj2ugjKsgdNDYa4SgHqzwoWZAenbA" },
+      dpns: { contractId: "GXBpKz9Nc1xEEMJETafK1np4JVtXshYsxfRYE8gdXc1b" },
       example: {
-        contractId: "9njaPq8fFwCXoMn9Q15LdMZiTwgrrBsaRzMMUgXpkLfw",
+        contractId: "2QiuWGsy5wPgDgam1YG5vZYKihXbM1CmP1t19NZAFcjH",
         // contractId: "7y6p6RUpzk9PTj77DBQXr2CaC1gLgFKYhiE3W3Sgo3T1",
       },
     },
@@ -105,6 +110,134 @@ const connectRemote = (remotePort) => {
         );
 
         break;
+      case "getConfirmedBalance":
+        sendResponse(
+          "onGetConfirmedBalance",
+          window.client.account.getConfirmedBalance()
+        );
+
+        break;
+      case "getUnusedAddress":
+        sendResponse(
+          "onGetUnusedAddress",
+          window.client.account.getUnusedAddress()
+        );
+
+        break;
+
+      case "signMessage": {
+        console.log("signmessage :>> ", data);
+        const idKey = window.client.account.identities.getIdentityHDKeyByIndex(
+          0,
+          0
+        );
+        const idPrivateKey = idKey.privateKey;
+        const address = idPrivateKey.toAddress().toString();
+        const message = new Message(data.payload.message);
+        console.log("message :>> ", message);
+        const signature = window.client.account.sign(message, idPrivateKey)
+          .message;
+
+        sendResponse("onSignMessage", {
+          message: data.payload.message,
+          signature,
+          address,
+        });
+        // const verify = message.verify(idAddress, signed.toString());
+        break;
+      }
+
+      case "verifyMessage": {
+        const message = new Message(data.payload.message);
+        const verify = message.verify(
+          data.payload.address,
+          data.payload.signature
+        );
+
+        sendResponse("onVerifyMessage", verify);
+        break;
+      }
+
+      case "encryptForIdentityECIES": {
+        console.dir(data, { depth: 100 });
+
+        const { identities } = window.client.account;
+
+        const HdPrivateKey = identities.getIdentityHDKeyByIndex(0, 0);
+
+        const privateKey = HdPrivateKey.privateKey.toString();
+
+        const { message, identity } = data.payload;
+
+        const publicKey = identity.publicKeys[0].data;
+
+        const recipientPublicKeyBuffer = Buffer.from(publicKey, "base64");
+        console.log(`recipientPublicKeyBuffer: ${recipientPublicKeyBuffer}`);
+        const recipientPublicKeyFromBuffer = new Dashcore.PublicKey(
+          recipientPublicKeyBuffer
+        );
+        console.log(
+          `recipientPublicKeyFromBuffer ${recipientPublicKeyFromBuffer}`
+        );
+        const signingKey = new Dashcore.PrivateKey(privateKey);
+
+        //sender encrypts
+        const sender = ECIES()
+          .privateKey(signingKey)
+          .publicKey(recipientPublicKeyFromBuffer);
+
+        const encrypted = sender.encrypt(message);
+
+        console.log("encrypted :>> ", encrypted);
+        const encryptedToB64 = Buffer.from(JSON.stringify(encrypted)).toString(
+          "base64"
+        );
+
+        sendResponse("onEncryptForIdentityECIES", encryptedToB64);
+        break;
+      }
+
+      case "decryptForIdentityECIES": {
+        console.log("decryptForIdentityECIES");
+        const { identities } = window.client.account;
+
+        const HdPrivateKey = identities.getIdentityHDKeyByIndex(0, 0);
+
+        const privateKey = HdPrivateKey.privateKey.toString();
+
+        const { encrypted, identity } = data.payload;
+
+        const publicKey = identity.publicKeys[0].data;
+
+        const senderPublicKeyBuffer = Buffer.from(publicKey, "base64");
+
+        console.log(`senderPublicKeyBuffer: ${senderPublicKeyBuffer}`);
+
+        const senderPublicKeyFromBuffer = new Dashcore.PublicKey(
+          senderPublicKeyBuffer
+        );
+
+        console.log(`senderPublicKeyFromBuffer ${senderPublicKeyFromBuffer}`);
+
+        const decryptingKey = new Dashcore.PrivateKey(privateKey);
+
+        const recipient = ECIES()
+          .privateKey(decryptingKey)
+          .publicKey(senderPublicKeyFromBuffer);
+
+        const toDecrypt = Buffer.from(
+          JSON.parse(Buffer.from(encrypted, "base64").toString()).data
+        );
+        const decrypted = recipient.decrypt(toDecrypt);
+
+        console.log(`decrypted: ${decrypted}`);
+
+        sendResponse(
+          "onDecryptForIdentityECIES",
+          Buffer.from(decrypted).toString()
+        );
+        break;
+      }
 
       case "inviteCode":
         chrome.storage.local.set({ inviteCode: data.payload }, function () {
