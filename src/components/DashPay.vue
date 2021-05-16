@@ -1,8 +1,13 @@
 <template>
   <div>
-    <v-card>
-      <v-card-title
-        ><v-img max-height="40px" max-width="40px" src="icons/150.png" />
+    <v-card style="text-align: center">
+      <v-card-title class="center"
+        ><v-img
+          max-height="40px"
+          max-width="40px"
+          src="icons/150.png"
+          style="margin-right: 12px"
+        />
         DashPay</v-card-title
       >
       <v-card-text class="text-center"
@@ -11,7 +16,10 @@
         ></v-card-text
       >
       <v-textarea outlined v-model="mnemonic"></v-textarea>
-      <v-row align="center" justify="center"
+      <v-row
+        align="center"
+        justify="center"
+        style="text-align: center; padding-bottom: 12px"
         ><v-spacer>
           <v-btn :loading="isSyncingDashClient" @click="login" class="pl-4"
             >Login</v-btn
@@ -35,8 +43,7 @@ export default {
       inviteCode: "",
       isSyncingDashClient: false,
       mnemonic:
-        "attract glass unlock illegal era utility corn trip truly room amateur ahead",
-      // "genius hair inch brisk disease suit history slush equal valid gate bicycle",
+        "sun ocean mimic tennis beef vapor list make broccoli pill equal field",
     };
   },
   created() {
@@ -104,5 +111,12 @@ export default {
 <style scoped>
 p {
   font-size: 20px;
+}
+.center {
+  display: flex;
+  justify-content: center;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
 }
 </style>

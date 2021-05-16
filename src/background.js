@@ -1,6 +1,7 @@
 import PortStream from "extension-port-stream";
 import localforage from "localforage";
 import Dash from "dash";
+const Identifier = require("@dashevo/dpp/lib/Identifier");
 import Dashcore from "@dashevo/dashcore-lib";
 // import secp256k1 from "secp256k1";
 const ECIES = require("bitcore-ecies-dash");
@@ -43,9 +44,9 @@ const syncDashClient = async ({ mnemonic }) => {
       adapter: localforage,
     },
     apps: {
-      dpns: { contractId: "GXBpKz9Nc1xEEMJETafK1np4JVtXshYsxfRYE8gdXc1b" },
+      dpns: { contractId: "7vJjSQpo7t8B6iDDwaxa4LYi98Wu87eYcRp6E2CQNzAj" },
       example: {
-        contractId: "2QiuWGsy5wPgDgam1YG5vZYKihXbM1CmP1t19NZAFcjH",
+        contractId: "7q6ThDPo3YtSj7WgA93JjgpVCSJ24bWFCC4pKh68zKuc",
         // contractId: "7y6p6RUpzk9PTj77DBQXr2CaC1gLgFKYhiE3W3Sgo3T1",
       },
     },
@@ -269,10 +270,22 @@ chrome.runtime.onConnect.addListener(connectRemote);
 
 // eslint-disable-next-line no-unused-vars
 const broadcastDocument = async ({ typeLocator, document }) => {
-  const platform = window.client.platform;
+  const { platform } = window.client;
+
+  const [contractId] = typeLocator.split(".");
+
+  console.log("contractId :>> ", contractId);
+
+  const retrievedContract = await platform.contracts.get(contractId);
+
+  // TODO use cache, hand over apps in constructor / connect method
+  window.client.getApps().set(contractId, {
+    contractId: Identifier.from(contractId),
+    contract: retrievedContract,
+  });
 
   const createdDocument = await platform.documents.create(
-    "example.example", // FIXME typeLocator
+    typeLocator,
     window.client.myIdentity,
     document
   );
