@@ -36,6 +36,8 @@ var background = chrome.extension.getBackgroundPage();
 // let client = background.client;
 // let syncDashClient = background.syncDashClient;
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export default {
   name: "DashPay",
   data: function () {
@@ -43,7 +45,11 @@ export default {
       inviteCode: "",
       isSyncingDashClient: false,
       mnemonic:
-        "sun ocean mimic tennis beef vapor list make broccoli pill equal field",
+        // "maple high anger skill daring assault agent kitten retire dust fence dial",
+        // "sun ocean mimic tennis beef vapor list make broccoli pill equal field",
+        // "ready coral rule cactus ignore food battle edit ahead metal square vague",
+        // "whale demand urban tide list chuckle cup dash orbit message caught arm",
+        "nasty speak tackle tomato cry elephant room tree garlic coin wink system",
     };
   },
   created() {
@@ -60,13 +66,14 @@ export default {
       that.inviteCode = result.inviteCode;
     });
   },
-  mounted() {
+  async mounted() {
     const that = this;
     chrome.storage.local.get(["counter"], function (result) {
       console.log("Value currently is " + result.counter);
       that.value = result.counter | 0;
       console.log("this.value mounted:>> ", that.value);
     });
+    await sleep(250);
     this.login();
   },
   methods: {

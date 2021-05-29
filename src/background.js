@@ -1,8 +1,10 @@
 import PortStream from "extension-port-stream";
-import localforage from "localforage";
+// import localforage from "localforage";
 import Dash from "dash";
-const Identifier = require("@dashevo/dpp/lib/Identifier");
 import Dashcore from "@dashevo/dashcore-lib";
+
+const Identifier = require("@dashevo/dpp/lib/Identifier");
+
 // import secp256k1 from "secp256k1";
 const ECIES = require("bitcore-ecies-dash");
 
@@ -11,6 +13,7 @@ const { Message } = require("@dashevo/dashcore-lib");
 const ONBOARD_MAGIC_URL = "http://127.0.0.1:3335/#/magic";
 let ONBOARD_TABID;
 
+// Automagically load invite code on install
 chrome.runtime.onInstalled.addListener((details) => {
   const currentVersion = chrome.runtime.getManifest().version;
   console.log("currentVersion :>> ", currentVersion);
@@ -27,28 +30,31 @@ chrome.runtime.onInstalled.addListener((details) => {
   });
 });
 
-// eslint-disable-next-line no-unused-vars
 const syncDashClient = async ({ mnemonic }) => {
   console.log("start syncDashClient");
 
   let clientOpts = {
-    unsafeOptions: {
-      // skipSynchronizationBeforeHeight: 415000, // only sync from start of 2021
-      // skipSynchronizationBeforeHeight: 485512,
-    },
+    // unsafeOptions: {
+    // skipSynchronizationBeforeHeight: 415000, // only sync from start of 2021
+    // skipSynchronizationBeforeHeight: 485512,
+    // },
     passFakeAssetLockProofForTests: false,
-    dapiAddresses: ["127.0.0.1:3000"],
+    dapiAddresses: [
+      "127.0.0.1:3000",
+      "127.0.0.1:3000",
+      "127.0.0.1:3000",
+      "127.0.0.1:3000",
+    ],
     // dapiAddresses: ["34.220.41.134", "18.236.216.191", "54.191.227.118"],
     wallet: {
       mnemonic,
-      adapter: localforage,
+      // adapter: localforage,
     },
     apps: {
-      dpns: { contractId: "7vJjSQpo7t8B6iDDwaxa4LYi98Wu87eYcRp6E2CQNzAj" },
-      example: {
-        contractId: "7q6ThDPo3YtSj7WgA93JjgpVCSJ24bWFCC4pKh68zKuc",
-        // contractId: "7y6p6RUpzk9PTj77DBQXr2CaC1gLgFKYhiE3W3Sgo3T1",
-      },
+      dpns: { contractId: "5zWK2kZFqhfRSfHh7hNLc2Y3RvSoXaapwKV1ta93Vcfy" },
+      // example: {
+      //   // contractId: "7y6p6RUpzk9PTj77DBQXr2CaC1gLgFKYhiE3W3Sgo3T1",
+      // },
     },
   };
 
@@ -72,14 +78,11 @@ const syncDashClient = async ({ mnemonic }) => {
 
   console.log("client.myIdentity :>> ", window.client.myIdentity);
 
-  // window.client = client;
-
   console.log("finish syncDashClient");
 };
 
 window.syncDashClient = syncDashClient;
 
-// syncDashClient();
 const connectRemote = (remotePort) => {
   if (remotePort.name !== "DashPayExtension") {
     return;
@@ -92,11 +95,12 @@ const connectRemote = (remotePort) => {
   window.portStream = new PortStream(remotePort);
 
   const sendResponse = (name, payload) => {
-    window.portStream.write({ name, payload });
+    console.log("sendResponse", name, payload, Date.now());
+    window.portStream.write({ name, payload, timestamp: Date.now() });
   };
 
   window.portStream.on("data", async (data) => {
-    console.log("DashPay(background): portStream.on", data); //, remotePort);
+    console.log("DashPay(background): portStream.on", data, Date.now()); //, remotePort);
 
     switch (data.name) {
       case "connect":
@@ -111,6 +115,17 @@ const connectRemote = (remotePort) => {
         );
 
         break;
+      case "broadcastDocumentBatch":
+        sendResponse(
+          "onBroadcastDocumentBatch",
+          await broadcastDocumentBatch(data.payload)
+        );
+        break;
+
+      case "createDocument":
+        sendResponse("onCreateDocument", await createDocument(data.payload));
+        break;
+
       case "getConfirmedBalance":
         sendResponse(
           "onGetConfirmedBalance",
@@ -250,7 +265,12 @@ const connectRemote = (remotePort) => {
         break;
 
       default:
-        console.log("received message :>> ", data.name, data.payload);
+        console.log(
+          "received unknown message :>> ",
+          data.name,
+          data.payload,
+          Date.now()
+        );
         break;
     }
   });
@@ -260,7 +280,11 @@ const connectRemote = (remotePort) => {
       sendResponse("onConnect", newValue);
       console.log(
         `Storage key "${key}" in namespace "${namespace}" changed.`,
-        `Old value was "${oldValue}", new value is "${newValue}".`
+        `Old value was`,
+        oldValue,
+        ", new value is ",
+        newValue,
+        Date.now()
       );
     }
   });
@@ -268,8 +292,8 @@ const connectRemote = (remotePort) => {
 
 chrome.runtime.onConnect.addListener(connectRemote);
 
-// eslint-disable-next-line no-unused-vars
-const broadcastDocument = async ({ typeLocator, document }) => {
+const createDocument = async ({ typeLocator, document }) => {
+  console.log("createDocument", document);
   const { platform } = window.client;
 
   const [contractId] = typeLocator.split(".");
@@ -292,6 +316,61 @@ const broadcastDocument = async ({ typeLocator, document }) => {
 
   console.log("created document :>> ", createdDocument);
 
+  return createdDocument;
+};
+
+const broadcastDocumentBatch = async ({ documentBatch }) => {
+  const { platform } = window.client;
+
+  console.log("documentBatch in extension background :>> ", documentBatch);
+
+  const documentBatchCreated = {
+    create: [],
+    replace: [],
+    delete: [],
+  };
+
+  const promises = documentBatch.create.map((document) => {
+    console.log("document in promises loop :>> ", document);
+
+    const typeLocator = `${document.$dataContractId}.${document.$type}`;
+
+    console.log("typeLocator in promises loop:>> ", typeLocator);
+
+    Object.keys(document).forEach(function (key) {
+      key.indexOf("$") == 0 && delete document[key];
+    });
+
+    console.log("document data only :>> ", document);
+
+    return createDocument({ typeLocator, document });
+  });
+
+  console.log("promises :>> ", promises);
+
+  documentBatchCreated.create = await Promise.all(promises);
+
+  console.log("documentBatchCreated.create :>> ", documentBatchCreated.create);
+
+  const result = await platform.documents.broadcast(
+    documentBatchCreated,
+    window.client.myIdentity
+  );
+
+  console.log("broadcastDocumentBatch result :>> ", result);
+
+  return result;
+};
+
+const broadcastDocument = async ({ typeLocator, document }) => {
+  const { platform } = window.client;
+
+  const [contractId] = typeLocator.split(".");
+
+  console.log("contractId :>> ", contractId);
+
+  const createdDocument = await createDocument({ typeLocator, document });
+
   const documentBatch = {
     create: [createdDocument],
     replace: [],
@@ -303,12 +382,12 @@ const broadcastDocument = async ({ typeLocator, document }) => {
     window.client.myIdentity
   );
 
-  console.log("broadcastDocument result :>> ", result);
   return result;
 };
 
 const POPUP_WIDTH = 420;
 const POPUP_HEIGHT = 640;
+
 /* popup */
 // TODO: Actions such as transaction rejection if user closes a popup
 let tabId = undefined;
