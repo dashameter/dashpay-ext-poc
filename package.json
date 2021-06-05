@@ -19,7 +19,7 @@
     "axios": "^0.20.0",
     "bitcore-ecies-dash": "^1.0.4",
     "core-js": "^3.6.5",
-    "dash": "^3.18.2",
+    "dash": "^3.19.4",
     "extension-port-stream": "^2.0.1",
     "localforage": "^1.9.0",
     "post-message-stream": "^3.0.0",

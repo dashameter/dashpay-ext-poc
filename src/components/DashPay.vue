@@ -16,6 +16,24 @@
         ></v-card-text
       >
       <v-textarea outlined v-model="mnemonic"></v-textarea>
+      <v-row>
+        <v-col v-for="(testUser, idx) in testUsers" :key="idx">
+          <v-btn text @click="mnemonic = testUser.mnemonic">
+            {{ testUser.name }}</v-btn
+          >
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <input
+            type="checkbox"
+            id="useAutoLogin"
+            name="useAutoLogin"
+            v-model="useAutoLogin"
+          />
+          <label for="useAutoLogin">Auto-Login</label>
+        </v-col>
+      </v-row>
       <v-row
         align="center"
         justify="center"
@@ -42,14 +60,22 @@ export default {
   name: "DashPay",
   data: function () {
     return {
+      useAutoLogin: false,
+      testUsers: [
+        {
+          name: "HoneyBadger",
+          mnemonic:
+            "sphere ozone bachelor raise clutch mercy mansion cook teach eager sleep gadget",
+        },
+        {
+          name: "Bob",
+          mnemonic:
+            "proud group frequent erase retire approve produce race wealth picnic alert pear",
+        },
+      ],
       inviteCode: "",
       isSyncingDashClient: false,
-      mnemonic:
-        // "maple high anger skill daring assault agent kitten retire dust fence dial",
-        // "sun ocean mimic tennis beef vapor list make broccoli pill equal field",
-        // "ready coral rule cactus ignore food battle edit ahead metal square vague",
-        // "whale demand urban tide list chuckle cup dash orbit message caught arm",
-        "nasty speak tackle tomato cry elephant room tree garlic coin wink system",
+      mnemonic: "",
     };
   },
   created() {
@@ -68,15 +94,43 @@ export default {
   },
   async mounted() {
     const that = this;
-    chrome.storage.local.get(["counter"], function (result) {
-      console.log("Value currently is " + result.counter);
-      that.value = result.counter | 0;
-      console.log("this.value mounted:>> ", that.value);
+
+    chrome.storage.local.get(["testMnemonic"], function (result) {
+      console.log("result.testMnemonic :>> ", result.testMnemonic);
+      that.mnemonic = result.testMnemonic || that.testUsers[0].mnemonic;
     });
-    await sleep(250);
-    this.login();
+
+    chrome.storage.local.get(["useAutoLogin"], function (result) {
+      that.useAutoLogin = result.useAutoLogin;
+    });
+
+    await sleep(150);
+
+    if (that.useAutoLogin) that.login();
+  },
+  watch: {
+    mnemonic: function () {
+      this.setMnemonic();
+    },
+    useAutoLogin: function () {
+      this.setUseAutoLogin();
+    },
   },
   methods: {
+    // async setMnemonic(testUserMnemonic) {
+    //   this.mnemonic = testUserMnemonic;
+    //   this.syncSettings();
+    // },
+    async setMnemonic() {
+      console.log("setMnemonic", this.mnemonic);
+
+      chrome.storage.local.set({ testMnemonic: this.mnemonic });
+    },
+    async setUseAutoLogin() {
+      chrome.storage.local.set({
+        useAutoLogin: this.useAutoLogin,
+      });
+    },
     async login() {
       this.isSyncingDashClient = true;
 
@@ -98,7 +152,7 @@ export default {
         console.log("accountDPNS :>> ", accountDPNS);
 
         chrome.tabs.getCurrent(function (tab) {
-          chrome.tabs.remove(tab.id, function () {});
+          tab.id && chrome.tabs.remove(tab.id, function () {});
         });
 
         chrome.storage.local.set({ accountDPNS }, function () {

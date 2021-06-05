@@ -1,5 +1,5 @@
 import PortStream from "extension-port-stream";
-// import localforage from "localforage";
+import localforage from "localforage";
 import Dash from "dash";
 import Dashcore from "@dashevo/dashcore-lib";
 
@@ -10,25 +10,28 @@ const ECIES = require("bitcore-ecies-dash");
 
 const { Message } = require("@dashevo/dashcore-lib");
 
-const ONBOARD_MAGIC_URL = "http://127.0.0.1:3335/#/magic";
+//
+// TODO: temporarily disabled for dApp development
+//
+// const ONBOARD_MAGIC_URL = "http://127.0.0.1:3335/#/magic";
 let ONBOARD_TABID;
-
+//
 // Automagically load invite code on install
-chrome.runtime.onInstalled.addListener((details) => {
-  const currentVersion = chrome.runtime.getManifest().version;
-  console.log("currentVersion :>> ", currentVersion);
-  console.log("details :>> ", details);
-  chrome.tabs.create({ url: ONBOARD_MAGIC_URL, active: false }, (tab) => {
-    ONBOARD_TABID = tab.id;
-    chrome.windows.getCurrent((window) => {
-      const top = Math.max(window.top, 0) || 0;
-      const left = Math.max(window.left + (window.width - POPUP_WIDTH), 0) || 0;
-
-      const config = { ONBOARD_TABID: tab.id, top, left };
-      chrome.windows.create(config);
-    });
-  });
-});
+//
+// chrome.runtime.onInstalled.addListener((details) => {
+//   const currentVersion = chrome.runtime.getManifest().version;
+//   console.log("currentVersion :>> ", currentVersion);
+//   console.log("details :>> ", details);
+//   chrome.tabs.create({ url: ONBOARD_MAGIC_URL, active: false }, (tab) => {
+//     ONBOARD_TABID = tab.id;
+//     chrome.windows.getCurrent((window) => {
+//       const top = Math.max(window.top, 0) || 0;
+//       const left = Math.max(window.left + (window.width - POPUP_WIDTH), 0) || 0;
+//       const config = { ONBOARD_TABID: tab.id, top, left };
+//       chrome.windows.create(config);
+//     });
+//   });
+// });
 
 const syncDashClient = async ({ mnemonic }) => {
   console.log("start syncDashClient");
@@ -38,27 +41,26 @@ const syncDashClient = async ({ mnemonic }) => {
     // skipSynchronizationBeforeHeight: 415000, // only sync from start of 2021
     // skipSynchronizationBeforeHeight: 485512,
     // },
-    passFakeAssetLockProofForTests: false,
-    dapiAddresses: [
-      "127.0.0.1:3000",
-      "127.0.0.1:3000",
-      "127.0.0.1:3000",
-      "127.0.0.1:3000",
-    ],
+    // passFakeAssetLockProofForTests: false,
+    dapiAddresses: process.env.VUE_APP_DAPIADDRESSES
+      ? JSON.parse(process.env.VUE_APP_DAPIADDRESSES)
+      : undefined,
+
     // dapiAddresses: ["34.220.41.134", "18.236.216.191", "54.191.227.118"],
     wallet: {
       mnemonic,
-      // adapter: localforage,
     },
     apps: {
-      dpns: { contractId: "5zWK2kZFqhfRSfHh7hNLc2Y3RvSoXaapwKV1ta93Vcfy" },
-      // example: {
-      //   // contractId: "7y6p6RUpzk9PTj77DBQXr2CaC1gLgFKYhiE3W3Sgo3T1",
-      // },
+      dpns: { contractId: process.env.VUE_APP_DPNS_CONTRACT_ID },
     },
   };
 
+  // Remove undefined keys from object
+  clientOpts = JSON.parse(JSON.stringify(clientOpts));
+
   console.log("clientOpts :>> ", clientOpts);
+
+  clientOpts.wallet.adapter = localforage;
 
   window.client = new Dash.Client(clientOpts);
 
@@ -277,7 +279,7 @@ const connectRemote = (remotePort) => {
 
   chrome.storage.onChanged.addListener(function (changes, namespace) {
     for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
-      sendResponse("onConnect", newValue);
+      if (key === "accountDPNS") sendResponse("onConnect", newValue);
       console.log(
         `Storage key "${key}" in namespace "${namespace}" changed.`,
         `Old value was`,
