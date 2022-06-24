@@ -8,7 +8,8 @@ const Identifier = require("@dashevo/dpp/lib/Identifier");
 // import secp256k1 from "secp256k1";
 const ECIES = require("bitcore-ecies-dash");
 
-const { Message } = require("@dashevo/dashcore-lib");
+// const { Message } = require("@dashevo/dashcore-lib");
+const Message = Dash.Core.Message;
 
 //
 // TODO: temporarily disabled for dApp development
@@ -49,9 +50,6 @@ const syncDashClient = async ({ mnemonic }) => {
     // dapiAddresses: ["34.220.41.134", "18.236.216.191", "54.191.227.118"],
     wallet: {
       mnemonic,
-    },
-    apps: {
-      dpns: { contractId: process.env.VUE_APP_DPNS_CONTRACT_ID },
     },
   };
 
@@ -153,8 +151,7 @@ const connectRemote = (remotePort) => {
         const address = idPrivateKey.toAddress().toString();
         const message = new Message(data.payload.message);
         console.log("message :>> ", message);
-        const signature = window.client.account.sign(message, idPrivateKey)
-          .message;
+        const signature = window.client.account.sign(message, idPrivateKey);
 
         sendResponse("onSignMessage", {
           message: data.payload.message,

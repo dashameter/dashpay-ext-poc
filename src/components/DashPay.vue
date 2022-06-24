@@ -63,9 +63,9 @@ export default {
       useAutoLogin: false,
       testUsers: [
         {
-          name: "HoneyBadger",
+          name: "Alice",
           mnemonic:
-            "sphere ozone bachelor raise clutch mercy mansion cook teach eager sleep gadget",
+            "access glad stomach deal tray entire mean grunt boy shoot want shrimp",
         },
         {
           name: "Bob",
@@ -152,7 +152,7 @@ export default {
         console.log("accountDPNS :>> ", accountDPNS);
 
         chrome.tabs.getCurrent(function (tab) {
-          tab.id && chrome.tabs.remove(tab.id, function () {});
+          tab && tab.id && chrome.tabs.remove(tab.id, function () {});
         });
 
         chrome.storage.local.set({ accountDPNS }, function () {
