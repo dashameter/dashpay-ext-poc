@@ -292,6 +292,7 @@ const connectRemote = (remotePort) => {
 chrome.runtime.onConnect.addListener(connectRemote);
 
 const createDocument = async ({ typeLocator, document }) => {
+  console.log("typeLocator, document :>> ", typeLocator, document);
   console.log("createDocument", document);
   const { platform } = window.client;
 

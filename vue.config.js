@@ -1,4 +1,7 @@
 module.exports = {
+  configureWebpack: {
+    devtool: "cheap-module-source-map",
+  },
   pages: {
     popup: {
       template: "public/browser-extension.html",
